@@ -27,7 +27,8 @@ func main() {
 			return
 		}
 		fmt.Println(value)
-		conn.Write([]byte("+OK\r\n"))
+		writer := NewWriter(conn)
+		_ = writer.Write(Value{typ: "string", str: "OK"})
 	}
 
 }

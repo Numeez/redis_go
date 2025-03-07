@@ -12,6 +12,22 @@ func main() {
 	if err != nil {
 		log.Fatal("Error: ", err)
 	}
+	aof, err := NewAOF("database.aof")
+	if err != nil {
+		log.Fatal("Error: ", err)
+	}
+	defer aof.Close()
+	_ = aof.Read(func(value Value) {
+		command := strings.ToUpper(value.array[0].bulk)
+		args := value.array[1:]
+		handler, ok := Handlers[command]
+		if !ok {
+			fmt.Println("Invalid command: ", command)
+			return
+		}
+
+		handler(args)
+	})
 
 	conn, err := listener.Accept()
 	if err != nil {
@@ -44,6 +60,9 @@ func main() {
 			fmt.Println("Invalid command: ", command)
 			_ = writer.Write(Value{typ: "string", str: ""})
 			continue
+		}
+		if command == "SET" || command == "HSET" {
+			_ = aof.Write(value)
 		}
 		result := handler(args)
 		_ = writer.Write(result)
